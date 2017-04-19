@@ -9,7 +9,7 @@ public class ViperServer
 	public static void main (String[] args)
 	{
 		System.out.println("Muggle Strugle");
-		Server server = new Server(2205);
+		Server server = new Server(8586);
 		server.start();
 		
 		InetAddress address = null;
@@ -19,7 +19,7 @@ public class ViperServer
 			e.printStackTrace();
 		}
 		
-		int port = 1337;
+		int port = 8586;
 		server.send(new byte[]{1,2,3}, address, port);
 	}
 }

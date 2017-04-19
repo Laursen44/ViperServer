@@ -7,7 +7,10 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import Serialization.Type;
 import Serialization.VPDatabase;
+import Serialization.VPField;
+import Serialization.VPObject;
 
 public class Server
 {
@@ -67,6 +70,9 @@ public class Server
 	private void process(DatagramPacket pack)
 	{
 		byte[] data = pack.getData();
+		InetAddress address = pack.getAddress();
+		int port = pack.getPort();
+		dump(pack);
 		if (new String(data,0,4).equals("VPDB"))
 		{
 			VPDatabase database = VPDatabase.Deserialize(data);
@@ -88,7 +94,8 @@ public class Server
 	
 	private void process (VPDatabase database) 
 	{
-		
+		System.out.println("received database!");
+		dump(database);
 	}
 
 	public void send(byte[] data, InetAddress address, int port)
@@ -101,5 +108,76 @@ public class Server
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
+	}
+	
+	private void dump(DatagramPacket pack)
+	{
+		byte[] data = pack.getData();
+		InetAddress address = pack.getAddress();
+		int port = pack.getPort();
+		
+		System.out.println("-------------------");
+		System.out.println("PACKET:");
+		System.out.println("\t"+address.getHostAddress()+":"+port);
+		System.out.println();
+		System.out.println("\tContents:");
+		System.out.println("\t\t" + new String(data));
+		System.out.println("-------------------");
+	}
+	
+	private void dump(VPDatabase database)
+	{
+		System.out.println("----------------------------------");
+		System.out.println("VPDatabase");
+		System.out.println("----------------------------------");
+		System.out.println("Name: " + database.getName());
+		System.out.println("Size: " + database.getSize());
+		System.out.println("Object count: " + database.objects.size());
+		System.out.println();
+		for(VPObject object : database.objects)
+		{
+			System.out.println("\tObject:");
+			System.out.println("\tName: " + object.getName());
+			System.out.println("\tSize: " +object.getSize());
+			System.out.println("\tField Count: " + object.fields.size());
+			for (VPField field : object.fields)
+			{
+				System.out.println("\t\tField: ");
+				System.out.println("\t\tName: " + field.getName());
+				System.out.println("\t\tSize: " + field.getSize());
+				String data ="";
+				switch (field.type)
+				{
+				case Type.BYTE:
+					data += field.getByte();
+					break;
+				case Type.SHORT:
+					data += field.getShort();
+					break;
+				case Type.CHAR:
+					data += field.getChar();
+					break;
+				case Type.INT:
+					data += field.getInt();
+					break;
+				case Type.LONG:
+					data += field.getLong();
+					break;
+				case Type.FLOAT:
+					data += field.getFloat();
+					break;
+				case Type.DOUBLE:
+					data += field.getDouble();
+					break;
+				case Type.BOOLEAN:
+					data += field.getBoolean();
+					break;
+				}
+				System.out.println("data: " +data);
+			}
+		}
+		
+		System.out.println("---------------------------------");
+		
 	}
 }
