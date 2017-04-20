@@ -6,6 +6,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.HashSet;
+import java.util.Set;
 
 import Serialization.Type;
 import Serialization.VPDatabase;
@@ -20,8 +22,8 @@ public class Server
 	private DatagramSocket socket;
 	//Sets a value that will be used at the maximum size for datapackets received. 
 	private final int MAX_PACKET_SIZE = 1024;
-
 	private byte[] receivedDataBuffer = new byte [MAX_PACKET_SIZE *10]; 
+	private Set<ServerClient> clients = new HashSet<ServerClient>();
 
 	//server constructor
 	public Server(int port)
@@ -44,12 +46,16 @@ public class Server
 			e.printStackTrace();
 			return;
 		} 
+		
+		System.out.println("started server on port 8586!");
+		
 		//listenThread object variable is assigned to an instance of
 		//the class thread and is implicitly implementing a runnable in
 		//which the listen method is run. Thereafter started. 
 		listening = true;
 		listenThread= new Thread (() -> listen(), "ViperProjectServer-ListenThread" );
 		listenThread.start();
+		System.out.println("Server is Listening");
 	}
 	public void listen()
 	{
@@ -78,12 +84,12 @@ public class Server
 			VPDatabase database = VPDatabase.Deserialize(data);
 			process(database);		
 		}
-		else
+		else if (data[0] ==0x40 && data[1] ==0x40)
 		{
-			switch (data[0])
+			switch (data[2])
 			{
-			case 1:
-				//connection packet
+			case 0x01:
+				clients.add(new ServerClient(pack.getAddress(), pack.getPort()));
 				break;
 			case 2:
 				//timeout packet
@@ -121,7 +127,14 @@ public class Server
 		System.out.println("\t"+address.getHostAddress()+":"+port);
 		System.out.println();
 		System.out.println("\tContents:");
-		System.out.println("\t\t" + new String(data));
+		System.out.println("\t\t");
+		
+		for (int i = 0; i < pack.getLength(); i++)
+		{
+			System.out.printf("%x", data[i]);
+			if ((i+1 ) % 16 == 0)
+				System.out.print("\n\t\t");
+		}
 		System.out.println("-------------------");
 	}
 	
