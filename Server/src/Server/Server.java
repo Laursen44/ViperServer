@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import Serialization.Type;
 import Serialization.VPDatabase;
 import Serialization.VPField;
 import Serialization.VPObject;
+import Serialization.VPString;
 
 public class Server
 {
@@ -23,7 +25,7 @@ public class Server
 	//Sets a value that will be used at the maximum size for datapackets received. 
 	private final int MAX_PACKET_SIZE = 1024;
 	private byte[] receivedDataBuffer = new byte [MAX_PACKET_SIZE *10]; 
-	private Set<ServerClient> clients = new HashSet<ServerClient>();
+	private ArrayList<ServerClient> clients = new ArrayList<ServerClient>();
 
 	//server constructor
 	public Server(int port)
@@ -47,7 +49,7 @@ public class Server
 			return;
 		} 
 		
-		System.out.println("started server on port 8586!");
+		System.out.println("started server on port 5030!");
 		
 		//listenThread object variable is assigned to an instance of
 		//the class thread and is implicitly implementing a runnable in
@@ -76,31 +78,84 @@ public class Server
 	private void process(DatagramPacket pack)
 	{
 		byte[] data = pack.getData();
-		InetAddress address = pack.getAddress();
-		int port = pack.getPort();
-		dump(pack);
+		
 		if (new String(data,0,4).equals("VPDB"))
 		{
 			VPDatabase database = VPDatabase.Deserialize(data);
-			process(database);		
-		}
-		else if (data[0] ==0x40 && data[1] ==0x40)
-		{
-			switch (data[2])
-			{
-			case 0x01:
-				clients.add(new ServerClient(pack.getAddress(), pack.getPort()));
-				break;
-			case 2:
-				//timeout packet
-				break;
-			}
+			process(database, pack);		
 		}
 	}
 	
-	private void process (VPDatabase database) 
+	private void process (VPDatabase database, DatagramPacket pack) 
 	{
 		System.out.println("received database!");
+		
+		if(database.getName().equals("Connection"))
+		{
+			// DO: create a server client!
+			String username = "";
+			for(VPObject object : database.objects)
+			{
+				username = object.getName();
+			}
+			for (int i = 0; i < clients.size(); i++)
+			{
+				if(clients.get(i).username.equals(username))
+				{
+					return;
+				}
+			}
+			clients.add(new ServerClient(pack.getAddress(), pack.getPort(), username));
+		}
+		
+		if(database.getName().equals("Update"))
+		{
+			// DO: check user-name against list of server clients
+			// if equal update its data!
+			for (VPObject object : database.objects)
+			{
+				for (int i = 0; i < clients.size(); i++)
+				{
+					if(object.getName().equals(clients.get(i).username))
+					{
+						for (VPField field : object.fields)
+						{
+							if(field.getName().equals("x"))
+							{
+								clients.get(i).x = field.getInt();
+							}
+							
+							if(field.getName().equals("y"))
+							{
+								clients.get(i).y = field.getInt();
+							}
+						}
+					} 
+				}
+			}
+
+		}
+		
+		if(database.getName().equals("Dead"))
+		{
+			// Do: check user-name agianst list of server clients
+			// if equal remove that one.
+			for (VPObject object : database.objects)
+			{
+				for (int i = 0; i < clients.size(); i++)
+				{
+					if(object.getName().equals(clients.get(i)))
+					{
+						clients.remove(i);
+					}
+				}
+			}
+		}
+		
+		// sends and updates clients with new information!
+		updateClients();
+		
+		// prints content in console for debugging.
 		dump(database);
 	}
 
@@ -116,26 +171,37 @@ public class Server
 		}		
 	}
 	
-	private void dump(DatagramPacket pack)
+	public void send(VPDatabase database, InetAddress address, int port)
 	{
-		byte[] data = pack.getData();
-		InetAddress address = pack.getAddress();
-		int port = pack.getPort();
+		byte[] data = new byte[database.getSize()];
+		database.getBytes(data,0);
+		send(data, address, port);
+	}
+	
+	public void updateClients()
+	{
+		VPDatabase database = new VPDatabase("Server Clients");
 		
-		System.out.println("-------------------");
-		System.out.println("PACKET:");
-		System.out.println("\t"+address.getHostAddress()+":"+port);
-		System.out.println();
-		System.out.println("\tContents:");
-		System.out.println("\t\t");
-		
-		for (int i = 0; i < pack.getLength(); i++)
+		for (int i = 0; i < clients.size(); i++)
 		{
-			System.out.printf("%x", data[i]);
-			if ((i+1 ) % 16 == 0)
-				System.out.print("\n\t\t");
+			VPObject object = new VPObject(clients.get(i).username);
+			
+			VPField xcord = VPField.Integer("x", clients.get(i).x);
+			VPField ycord = VPField.Integer("y", clients.get(i).y);
+			
+			object.addField(xcord);
+			object.addField(ycord);
+			
+			database.addObject(object);
 		}
-		System.out.println("-------------------");
+		
+		for (int i = 0; i < clients.size(); i++)
+		{
+			send(database, clients.get(i).address, clients.get(i).port );
+			
+			System.out.println("client updated!");
+		}
+		
 	}
 	
 	private void dump(VPDatabase database)
@@ -188,6 +254,18 @@ public class Server
 				}
 				System.out.println("data: " +data);
 			}
+			
+			System.out.println("\tString Count: " + object.strings.size());
+			String data = "";
+			for (VPString string : object.strings)
+			{
+				
+				System.out.println("\t\tString: ");
+				System.out.println("\t\tName: " + string.getName());
+				System.out.println("\t\tSize: " + string.getSize());
+				 data += string.getString();
+			}
+			System.out.println("data: " + data);
 		}
 		
 		System.out.println("---------------------------------");

@@ -4,24 +4,22 @@ import java.net.InetAddress;
 
 public class ServerClient {
 
-	public int userID;
-	private InetAddress address;
-	private int port;
-	private boolean status = false; //is Connected
+	public String username;
+	public InetAddress address;
+	public int port;
+	public boolean status = false; //is Connected
 	
-	private static int userIDCounter = 0;
+	public int x, y;
 	
-	public ServerClient(InetAddress address, int port)
+	public ServerClient(InetAddress address, int port, String username)
 	{
-		userID = userIDCounter++;
 		this.address = address;
-		this.port =port;
+		this.port = port;
+		this.username = username;
 		status = true;
+		this.x = 200;
+		this.y = 200;
 	}
 	
-	public int hashCode()
-	{
-		return userID;
-	}
 	
 }
