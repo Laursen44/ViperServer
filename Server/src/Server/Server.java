@@ -98,14 +98,18 @@ public class Server
 			{
 				username = object.getName();
 			}
+			boolean isConnected = false;
 			for (int i = 0; i < clients.size(); i++)
 			{
 				if(clients.get(i).username.equals(username))
 				{
-					return;
+					isConnected = true;
 				}
 			}
-			clients.add(new ServerClient(pack.getAddress(), pack.getPort(), username));
+			if(!isConnected)
+			{
+				clients.add(new ServerClient(pack.getAddress(), pack.getPort(), username));
+			}
 		}
 		
 		if(database.getName().equals("Update"))
@@ -122,12 +126,12 @@ public class Server
 						{
 							if(field.getName().equals("x"))
 							{
-								clients.get(i).x = field.getInt();
+								clients.get(i).x += field.getInt();
 							}
 							
 							if(field.getName().equals("y"))
 							{
-								clients.get(i).y = field.getInt();
+								clients.get(i).y += field.getInt();
 							}
 						}
 					} 
@@ -156,7 +160,7 @@ public class Server
 		updateClients();
 		
 		// prints content in console for debugging.
-		dump(database);
+		//dump(database);
 	}
 
 	public void send(byte[] data, InetAddress address, int port)
@@ -224,51 +228,10 @@ public class Server
 				System.out.println("\t\tField: ");
 				System.out.println("\t\tName: " + field.getName());
 				System.out.println("\t\tSize: " + field.getSize());
-				String data ="";
-				switch (field.type)
-				{
-				case Type.BYTE:
-					data += field.getByte();
-					break;
-				case Type.SHORT:
-					data += field.getShort();
-					break;
-				case Type.CHAR:
-					data += field.getChar();
-					break;
-				case Type.INT:
-					data += field.getInt();
-					break;
-				case Type.LONG:
-					data += field.getLong();
-					break;
-				case Type.FLOAT:
-					data += field.getFloat();
-					break;
-				case Type.DOUBLE:
-					data += field.getDouble();
-					break;
-				case Type.BOOLEAN:
-					data += field.getBoolean();
-					break;
-				}
-				System.out.println("data: " +data);
-			}
-			
-			System.out.println("\tString Count: " + object.strings.size());
-			String data = "";
-			for (VPString string : object.strings)
-			{
-				
-				System.out.println("\t\tString: ");
-				System.out.println("\t\tName: " + string.getName());
-				System.out.println("\t\tSize: " + string.getSize());
-				 data += string.getString();
-			}
-			System.out.println("data: " + data);
-		}
-		
+				System.out.println("\t\tSize: " + field.getInt());
 		System.out.println("---------------------------------");
 		
+			}
+		}
 	}
 }
