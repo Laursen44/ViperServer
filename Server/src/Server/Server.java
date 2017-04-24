@@ -5,16 +5,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-
-import Serialization.Type;
 import Serialization.VPDatabase;
 import Serialization.VPField;
 import Serialization.VPObject;
-import Serialization.VPString;
 
 public class Server
 {
@@ -137,7 +131,38 @@ public class Server
 					} 
 				}
 			}
-
+		}
+		
+		if(database.getName().equals("Projectiles"))
+		{
+			for (int i = 0; i < 1; i++)
+			{
+				for (int j = 0; j < clients.size(); j++)
+				{
+					if (database.objects.get(i).equals(clients.get(j).username))
+					{
+						int x = 0, y = 0;
+						String username = clients.get(j).username;
+						
+						for (int k = 1; k < database.objects.size(); i++)
+						{
+							for (VPField field : database.objects.get(i).fields)
+							{
+								if(field.getName().equals("x"))
+								{
+									x = field.getInt();
+								}
+								
+								if(field.getName().equals("y"))
+								{
+									y = field.getInt();
+								}
+							}
+						}
+						clients.get(j).addBullet(new Projectile(x, y, username));
+					}
+				}
+			}
 		}
 		
 		if(database.getName().equals("Dead"))
@@ -184,7 +209,13 @@ public class Server
 	
 	public void updateClients()
 	{
-		VPDatabase database = new VPDatabase("Server Clients");
+		playerUpdate();
+		projectileUpdate();
+	}
+	
+	public void playerUpdate()
+	{
+		VPDatabase database = new VPDatabase("PlayerPos");
 		
 		for (int i = 0; i < clients.size(); i++)
 		{
@@ -202,10 +233,36 @@ public class Server
 		for (int i = 0; i < clients.size(); i++)
 		{
 			send(database, clients.get(i).address, clients.get(i).port );
-			
-			System.out.println("client updated!");
+			System.out.println("Players updated!");
+		}
+	}
+	
+	public void projectileUpdate()
+	{
+		VPDatabase database = new VPDatabase("ProjectilePos");
+		
+		for (int i = 0; i < clients.size(); i++)
+		{
+			for (int j = 0; j < clients.get(i).bullets.size(); j++)
+			{
+				int x = clients.get(i).bullets.get(j).x;
+				int y = clients.get(i).bullets.get(j).y;
+				String username= clients.get(i).bullets.get(j).username;
+				
+				VPObject object = new VPObject(username);
+				VPField xCord = VPField.Integer("x", x);
+				VPField yCord = VPField.Integer("y", y);
+				object.addField(xCord);
+				object.addField(yCord);
+				database.addObject(object);
+			}
 		}
 		
+		for (int i = 0; i < clients.size(); i++)
+		{
+			send(database, clients.get(i).address, clients.get(i).port );
+			System.out.println("Projectiles updated!");
+		}
 	}
 	
 	private void dump(VPDatabase database)
