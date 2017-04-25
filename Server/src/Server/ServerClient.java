@@ -37,14 +37,19 @@ public class ServerClient {
 
 class Projectile 
 {
-	public int x, y;
+	public int x, y; 
+	public float xdir, ydir;
+	public int newB;
 	public String username;
 	
-	public Projectile(int x, int y, String username)
+	public Projectile(int x, int y, float xdir, float ydir, String username)
 	{
 		this.x = x;
-		this.y = y; 
+		this.y = y;
+		this.xdir = xdir;
+		this.ydir = ydir;
 		this.username = username;
+		this.newB = 1;
 	}
 }
 

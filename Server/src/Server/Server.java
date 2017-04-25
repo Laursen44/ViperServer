@@ -120,12 +120,12 @@ public class Server
 						{
 							if(field.getName().equals("x"))
 							{
-								clients.get(i).x += field.getInt();
+								clients.get(i).x = field.getInt();
 							}
 							
 							if(field.getName().equals("y"))
 							{
-								clients.get(i).y += field.getInt();
+								clients.get(i).y = field.getInt();
 							}
 						}
 					} 
@@ -135,31 +135,59 @@ public class Server
 		
 		if(database.getName().equals("Projectiles"))
 		{
-			for (int i = 0; i < 1; i++)
+			for (VPObject object : database.objects)
 			{
-				for (int j = 0; j < clients.size(); j++)
+				for (int i = 0; i < clients.size(); i++)
 				{
-					if (database.objects.get(i).equals(clients.get(j).username))
+					ArrayList<String> usernames = new ArrayList<String>();
+					
+					for (int j = 0; j < clients.get(i).bullets.size(); j++)
 					{
-						int x = 0, y = 0;
-						String username = clients.get(j).username;
-						
-						for (int k = 1; k < database.objects.size(); i++)
+						usernames.add(clients.get(i).bullets.get(j).username);
+					}
+					
+					String usernameIndex = object.getName();
+					boolean existing = false;
+					
+					for (int k = 0; k < usernames.size(); k++)
+					{
+						if (usernameIndex.equals(usernames.get(k)))
 						{
-							for (VPField field : database.objects.get(i).fields)
+							existing = true;
+						}
+					}
+					
+					System.out.println(existing);
+					//update existing bullets.
+					for (Projectile bullet : clients.get(i).bullets)
+					{
+						if (existing)
+						{
+							bullet.newB = 0;
+							for (VPField field : object.fields)
 							{
-								if(field.getName().equals("x"))
-								{
-									x = field.getInt();
-								}
-								
-								if(field.getName().equals("y"))
-								{
-									y = field.getInt();
-								}
+								if(field.getName().equals("x"))	 bullet.x 	= field.getInt();
+								if(field.getName().equals("y"))	 bullet.y 	= field.getInt();
+								if(field.getName().equals("xd")) bullet.xdir = field.getFloat();
+								if(field.getName().equals("yd")) bullet.ydir = field.getFloat();
+
 							}
 						}
-						clients.get(j).addBullet(new Projectile(x, y, username));
+					}
+					if(!existing)
+					{
+						int x = 0, y = 0; 
+						float xdir = 0, ydir = 0;
+					
+						for (VPField field : object.fields)
+						{
+							if(field.getName().equals("x"))	 x = field.getInt();
+							if(field.getName().equals("y"))  y = field.getInt();
+							if(field.getName().equals("xd")) xdir = field.getFloat();
+							if(field.getName().equals("yd")) ydir = field.getFloat();
+						}	
+						clients.get(i).addBullet(new Projectile(x, y, xdir, ydir, usernameIndex));
+						System.out.println("added a projectile");
 					}
 				}
 			}
@@ -242,18 +270,31 @@ public class Server
 		VPDatabase database = new VPDatabase("ProjectilePos");
 		
 		for (int i = 0; i < clients.size(); i++)
-		{
+		{ 
+			
 			for (int j = 0; j < clients.get(i).bullets.size(); j++)
 			{
-				int x = clients.get(i).bullets.get(j).x;
-				int y = clients.get(i).bullets.get(j).y;
-				String username= clients.get(i).bullets.get(j).username;
+				int x 			= clients.get(i).bullets.get(j).x;
+				int y 			= clients.get(i).bullets.get(j).y;
+				float xdir 		= clients.get(i).bullets.get(j).xdir;
+				float ydir 		= clients.get(i).bullets.get(j).ydir;
+				String username = clients.get(i).bullets.get(j).username;
+				int newB    = clients.get(i).bullets.get(j).newB;
 				
 				VPObject object = new VPObject(username);
-				VPField xCord = VPField.Integer("x", x);
-				VPField yCord = VPField.Integer("y", y);
+				
+				VPField xCord 	 = VPField.Integer("x", x);
+				VPField yCord 	 = VPField.Integer("y", y);
+				VPField xdirCord = VPField.Float("xd", xdir);
+				VPField ydirCord = VPField.Float("yd", ydir);
+				VPField newBullet= VPField.Integer("new", newB);
+				
+				object.addField(newBullet);
 				object.addField(xCord);
 				object.addField(yCord);
+				object.addField(xdirCord);
+				object.addField(ydirCord);
+				
 				database.addObject(object);
 			}
 		}
