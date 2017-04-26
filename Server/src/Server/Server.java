@@ -133,63 +133,23 @@ public class Server
 			}
 		}
 		
-		if(database.getName().equals("Projectiles"))
+		if(database.getName().equals("Projectile"))
 		{
 			for (VPObject object : database.objects)
 			{
-				for (int i = 0; i < clients.size(); i++)
+				String username = object.getName();
+				float x= 0, y = 0, a = 0;
+				int t = 0;
+				
+				for (VPField field : object.fields)
 				{
-					ArrayList<String> usernames = new ArrayList<String>();
-					
-					for (int j = 0; j < clients.get(i).bullets.size(); j++)
-					{
-						usernames.add(clients.get(i).bullets.get(j).username);
-					}
-					
-					String usernameIndex = object.getName();
-					boolean existing = false;
-					
-					for (int k = 0; k < usernames.size(); k++)
-					{
-						if (usernameIndex.equals(usernames.get(k)))
-						{
-							existing = true;
-						}
-					}
-					
-					System.out.println(existing);
-					//update existing bullets.
-					for (Projectile bullet : clients.get(i).bullets)
-					{
-						if (existing)
-						{
-							bullet.newB = 0;
-							for (VPField field : object.fields)
-							{
-								if(field.getName().equals("x"))	 bullet.x 	= field.getInt();
-								if(field.getName().equals("y"))	 bullet.y 	= field.getInt();
-								if(field.getName().equals("xd")) bullet.xdir = field.getFloat();
-								if(field.getName().equals("yd")) bullet.ydir = field.getFloat();
-
-							}
-						}
-					}
-					if(!existing)
-					{
-						int x = 0, y = 0; 
-						float xdir = 0, ydir = 0;
-					
-						for (VPField field : object.fields)
-						{
-							if(field.getName().equals("x"))	 x = field.getInt();
-							if(field.getName().equals("y"))  y = field.getInt();
-							if(field.getName().equals("xd")) xdir = field.getFloat();
-							if(field.getName().equals("yd")) ydir = field.getFloat();
-						}	
-						clients.get(i).addBullet(new Projectile(x, y, xdir, ydir, usernameIndex));
-						System.out.println("added a projectile");
-					}
+					if (field.getName().equals("x")) x = field.getFloat();
+					if (field.getName().equals("y")) y = field.getFloat();
+					if (field.getName().equals("a")) a = field.getFloat();
+					if (field.getName().equals("t")) t = field.getInt();
 				}
+				
+				ServerProjectile.bullets.add(new ServerProjectile(x, y, a, t, username));
 			}
 		}
 		
@@ -267,42 +227,27 @@ public class Server
 	
 	public void projectileUpdate()
 	{
-		VPDatabase database = new VPDatabase("ProjectilePos");
+		VPDatabase database = new VPDatabase("ProjectileBlue");
 		
-		for (int i = 0; i < clients.size(); i++)
+		for (ServerProjectile bullet : ServerProjectile.bullets)
 		{ 
-			
-			for (int j = 0; j < clients.get(i).bullets.size(); j++)
-			{
-				int x 			= clients.get(i).bullets.get(j).x;
-				int y 			= clients.get(i).bullets.get(j).y;
-				float xdir 		= clients.get(i).bullets.get(j).xdir;
-				float ydir 		= clients.get(i).bullets.get(j).ydir;
-				String username = clients.get(i).bullets.get(j).username;
-				int newB    = clients.get(i).bullets.get(j).newB;
-				
-				VPObject object = new VPObject(username);
-				
-				VPField xCord 	 = VPField.Integer("x", x);
-				VPField yCord 	 = VPField.Integer("y", y);
-				VPField xdirCord = VPField.Float("xd", xdir);
-				VPField ydirCord = VPField.Float("yd", ydir);
-				VPField newBullet= VPField.Integer("new", newB);
-				
-				object.addField(newBullet);
-				object.addField(xCord);
-				object.addField(yCord);
-				object.addField(xdirCord);
-				object.addField(ydirCord);
-				
-				database.addObject(object);
-			}
+			VPObject object = new VPObject(bullet.username);
+			VPField x = VPField.Float("x", bullet.x);
+			VPField y = VPField.Float("y", bullet.y);
+			VPField a = VPField.Float("a", bullet.a);
+			VPField t = VPField.Integer("t", bullet.t);
+			object.addField(x);
+			object.addField(y);
+			object.addField(a);
+			object.addField(t);
+			database.addObject(object);
 		}
 		
-		for (int i = 0; i < clients.size(); i++)
+		for (ServerClient client : clients)
 		{
-			send(database, clients.get(i).address, clients.get(i).port );
-			System.out.println("Projectiles updated!");
+			send(database, client.address, client.port );
+			System.out.println("ProjectileBlue sent");
+			ServerProjectile.bullets.clear();
 		}
 	}
 	
